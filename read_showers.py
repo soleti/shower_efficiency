@@ -2,12 +2,12 @@
 
 from __future__ import division
 
-import os, sys
+import os, sys, math
 from glob import glob
 
 from ROOT import gROOT, gStyle, TFile, TH1F, THStack, TCanvas, TLegend, TH2F
 from ROOT import kAzure, kOrange, kRed, kGray, kBlack
-from ROOT import gallery, art, vector, string, recob, simb
+from ROOT import gallery, art, vector, string, recob, simb, sim
 
 gStyle.SetOptStat(0)
 gStyle.SetPalette(87)
@@ -18,6 +18,11 @@ def style_hist(hist,color=kRed):
     hist.SetFillColor(color)
     return hist
 
+def shower_length(shower):
+    start = [shower.Start().X(),shower.Start().Y(),shower.Start().Z()]
+    end = [shower.End().X(),shower.End().Y(),shower.End().Z()]
+    l = math.sqrt(sum([(s-e)**2 for s,e in zip(start,end)]))
+    return l
 
 # Some functions that I find useful to reduce error-prone typing.
 def read_header(h):
@@ -38,13 +43,15 @@ read_header("gallery/ValidHandle.h")
 print "Instantiating member templates..."
 provide_get_valid_handle('std::vector<recob::Shower>')
 provide_get_valid_handle('std::vector<simb::MCParticle>')
+provide_get_valid_handle('std::vector<sim::MCShower>')
 
 print "Preparing before event loop..."
 showers_tag = art.InputTag("showerrecopandora")
 mcparticles_tag = art.InputTag("largeant")
-
+mcshowers_tag = art.InputTag("mcreco")
 files = glob("/pnfs/uboone/scratch/users/srsoleti/nu_e_only/v06_21_00/reco2/NuE/*/prod*.root")
 filenames = vector(string)()
+print len(files)
 for f in files:
     filenames.push_back(f)
 
@@ -65,10 +72,12 @@ h_n_ep_primaries = TH1F("h_n_ep_primaries",";# primaries;N. Entries / 1",20,0,20
 
 h_n_showers = TH1F("h_n_showers",";# showers;N. Entries / 1",10,0,10)
 
-h_e_diff = TH1F("h_e_diff",";E [GeV];N. Entries / 0.04 GeV", 25, -0.1, 0.9)
+h_e_diff = TH1F("h_e_diff",";#Delta E [GeV];N. Entries / 0.04 GeV", 25, -0.1, 0.9)
 
-h_n_showers_e = TH2F("h_n_showers_e",";# showers; E [GeV]",10,0,10,50,0,2)
-h_s_e = TH2F("h_s_e",";Showers energy [GeV];e^{-} energy [GeV]",50,0,2,50,0,2)
+h_n_showers_e = TH2F("h_n_showers_e",";# showers;e^{-} energy [GeV]",10,0,10,10,0,2)
+h_mc_reco = TH2F("h_mc_reco",";# MC showers; # Reco. showers",10,0,10,10,0,10)
+h_s_e = TH2F("h_s_e",";e^{-} energy [GeV];Showers energy [GeV]",50,0,2,50,0,2)
+h_length = TH2F("h_length",";# showers; MC Shower length [cm]",10,0,10,10,0,200)
 
 print "Creating event object ..."
 ev = gallery.Event(filenames)
@@ -77,6 +86,7 @@ ev = gallery.Event(filenames)
 # inefficiency in constructing the function objects many times.
 get_showers = ev.getValidHandle(vector(recob.Shower))
 get_mcparticles = ev.getValidHandle(vector(simb.MCParticle))
+get_mcshowers = ev.getValidHandle(vector(sim.MCShower))
 print "Entering event loop..."
 
 while (not ev.atEnd()):
@@ -101,25 +111,32 @@ while (not ev.atEnd()):
     if len(pdg_primaries) == 2 and 11 in pdg_primaries and 2212 in pdg_primaries:
         h_n_ep_primaries.Fill(len(pdg_primaries))
         tot_s_energy = 0
+        tot_mc_s_energy = 0
+
         showers = get_showers(showers_tag)
+        mcshowers = get_mcshowers(mcshowers_tag)
+
         h_n_showers.Fill(len(showers.product()))
 
         for s in showers.product():
             tot_s_energy += s.Energy()[s.best_plane()]/1000
 
         h_n_showers_e.Fill(len(showers.product()),e_energy)
-        h_s_e.Fill(tot_s_energy,e_energy)
-
+        h_mc_reco.Fill(len(mcshowers.product()), len(showers.product()))
+        mcshower_length = shower_length(mcshowers.product()[0])
+        h_length.Fill(len(showers.product()),mcshower_length)
         if len(showers.product()):
             h_e_diff.Fill(e_energy-tot_s_energy)
+            h_s_e.Fill(e_energy,tot_s_energy)
 
     else:
         h_n_primaries.Fill(len(pdg_primaries))
 
+
     ev.next()
 
 c_p = TCanvas("c_p")
-h_primaries_stack = THStack("h_primaries_stack",";N. Entries / 0.02 GeV/c;P [GeV/c]")
+h_primaries_stack = THStack("h_primaries_stack",";P [GeV/c];N. Entries / 0.02 GeV/c")
 leg = TLegend(0.67,0.66,0.8,0.85)
 leg.SetBorderSize(0)
 leg.SetShadowColor(0)
@@ -170,5 +187,16 @@ h_n_showers_e.Draw("colz")
 c_n_e.Update()
 c_n_e.SaveAs("c_n_e.pdf")
 
+c_mc_reco = TCanvas("c_mc_reco")
+h_mc_reco.Draw("colz")
+c_mc_reco.Update()
+c_mc_reco.SaveAs("c_mc_reco.pdf")
+
+c_length = TCanvas("c_length")
+h_length.Draw("colz")
+c_length.Update()
+c_length.SaveAs("c_length.pdf")
+
 print "Writing histograms..."
 histfile.Write()
+raw_input()
