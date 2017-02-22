@@ -135,7 +135,10 @@ while (not ev.atEnd()):
         if p.Process() == "primary":
             pdg_primaries.append(p.PdgCode())
             if abs(p.PdgCode()) == 11:
+<<<<<<< Updated upstream
                 e_energy = p.E()
+=======
+>>>>>>> Stashed changes
                 h_primaries_e.Fill(p.P())
             elif p.PdgCode() == 2212: # proton
                 h_primaries_p.Fill(p.P())
@@ -365,8 +368,8 @@ h_stack_energy = THStack("h_stack_energy",";MC shower energy [GeV];N. Entries / 
 h_stack_energy.Add(h_zero_showers_energy)
 h_stack_energy.Add(h_mc_shower_energy)
 
-
 h_stack_energy.Draw()
+leg_reco.Draw()
 c_zero_energy.Draw()
 c_zero_energy.SaveAs("plots/zero_energy.pdf")
 
