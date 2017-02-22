@@ -159,6 +159,7 @@ while (not ev.atEnd()):
 
         tot_s_energy = 0
         for s in showers:
+            print(s.Energy())
             tot_s_energy += max(s.Energy())/1000
 
         if len(mcshowers) == 1:
