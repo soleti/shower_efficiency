@@ -64,8 +64,8 @@ mcparticles_tag = art.InputTag("largeant")
 mcreco_tag = art.InputTag("mcreco")
 track_tag = art.InputTag("pandoraNu")
 
-files = glob("/pnfs/uboone/scratch/users/srsoleti/nu_e_only/v06_25_00/reco2/NuE/*/prod*.root")
-#files = glob("/uboone/app/users/srsoleti/nu_e/pr*.root")
+#files = glob("/pnfs/uboone/scratch/users/srsoleti/nu_e_only/v06_25_00/reco2/NuE/*/prod*.root")
+files = glob("/uboone/app/users/srsoleti/shower_efficiency/pr*.root")
 filenames = vector(string)()
 print "Number of files: ", len(files)
 for f in files:
@@ -158,15 +158,16 @@ while (not ev.atEnd()):
         tracks = get_tracks(pandoraNu_tag).product()
 
         tot_s_energy = 0
+        
         for s in showers:
-            print(s.Energy())
-            tot_s_energy += max(s.Energy())/1000
+            if len(s.Energy()):
+                if max(s.Energy()) > 0: tot_s_energy += max(s.Energy())
 
         if len(mcshowers) == 1:
             mc_shower_energy = mcshowers[0].DetProfile().E()/1000
 
             if mc_shower_energy > 0.01: # 10 MeV threshold
-                h_mc_reco.Fill(len(showers),len(mcshowers))
+                h_mc_reco_n.Fill(len(showers),len(mcshowers))
                 h_n_showers.Fill(len(showers))
 
                 h_length.Fill(len(showers), shower_length(mcshowers[0]))
