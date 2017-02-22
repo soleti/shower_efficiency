@@ -135,10 +135,6 @@ while (not ev.atEnd()):
         if p.Process() == "primary":
             pdg_primaries.append(p.PdgCode())
             if abs(p.PdgCode()) == 11:
-<<<<<<< Updated upstream
-                e_energy = p.E()
-=======
->>>>>>> Stashed changes
                 h_primaries_e.Fill(p.P())
             elif p.PdgCode() == 2212: # proton
                 h_primaries_p.Fill(p.P())
