@@ -147,17 +147,15 @@ while (not ev.atEnd()):
 
     if len(pdg_primaries) == 2 and 11 in pdg_primaries and 2212 in pdg_primaries:
         h_n_ep_primaries.Fill(len(pdg_primaries))
-        tot_s_energy = 0
 
         tracks = get_tracks(pandoraNu_tag).product()
         showers = get_showers(pandoraNu_tag).product()
         mcshowers = get_mcshowers(mcreco_tag).product()
         tracks = get_tracks(pandoraNu_tag).product()
 
-
+        tot_s_energy = 0
         for s in showers:
-            tot_s_energy += s.Energy()[s.best_plane()]/1000
-
+            tot_s_energy += max(s.Energy())/1000
 
         if len(mcshowers) == 1:
             mc_shower_energy = mcshowers[0].DetProfile().E()/1000
