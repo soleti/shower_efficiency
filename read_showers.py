@@ -52,8 +52,6 @@ provide_get_valid_handle("std::vector<simb::MCParticle>")
 provide_get_valid_handle("std::vector<sim::MCShower>")
 provide_get_valid_handle("std::vector<recob::Track>")
 provide_get_valid_handle("std::vector<simb::MCTruth>")
-# Now for the script...
-
 
 print "Preparing before event loop..."
 pandoraNu_tag = art.InputTag("pandoraNu")
@@ -61,15 +59,15 @@ generator_tag = art.InputTag("generator")
 mcparticles_tag = art.InputTag("largeant")
 mcreco_tag = art.InputTag("mcreco")
 track_tag = art.InputTag("pandoraNu")
-showerrecopandora_tag = art.InputTag("showerrecopandora")
-files = glob("/pnfs/uboone/scratch/users/srsoleti/nu_e_only/v06_24_00/reco2/NuE/*/prod*.root")
+
+files = glob("/pnfs/uboone/scratch/users/srsoleti/nu_e_only/v06_25_00/reco2/NuE/*/prod*.root")
+#files = glob("/uboone/app/users/srsoleti/nu_e/pr*.root")
 filenames = vector(string)()
 print "Number of files: ", len(files)
 for f in files:
     filenames.push_back(f)
 
-# Make histograms before we open the art/ROOT file, or the file ends
-# up owning the histograms.
+# Primaries histograms
 h_primaries_p = TH1F("h_primaries_p",";P [GeV/c];N. Entries / 0.04 GeV",50,0,2)
 h_primaries_e = TH1F("h_primaries_e",";P [GeV/c];N. Entries / 0.04 GeV",50,0,2)
 h_primaries_n = TH1F("h_primaries_n",";P [GeV/c];N. Entries / 0.04 GeV",50,0,2)
@@ -82,30 +80,31 @@ primaries_colors = [kRed+1,kAzure+1,kOrange+1,kGray+1]
 h_n_primaries = TH1F("h_n_primaries",";# primaries;N. Entries / 1",20,0,20)
 h_n_ep_primaries = TH1F("h_n_ep_primaries",";# primaries;N. Entries / 1",20,0,20)
 
-h_n_showers = TH1F("h_n_showers",";# showers;N. Entries / 1",10,0,10)
+h_n_showers = TH1F("h_n_showers",";# Reco. showers;N. Entries / 1",10,0,10)
 
-h_e_diff = TH1F("h_e_diff",";#Delta E [GeV];N. Entries / 0.04 GeV", 45, -0.5, 1)
+h_e_diff = TH1F("h_e_diff",";E_{MC}-#Sigma E_{reco} [GeV];N. Entries / 0.04 GeV", 45, -0.5, 1)
 
-h_n_showers_e = TH2F("h_n_showers_e",";# Reco. showers;MC shower energy [GeV]",10,0,10,20,0,2)
-h_mc_reco = TH2F("h_mc_reco",";# Reco. showers;# MC showers",10,0,10,10,0,10)
-h_s_e = TH2F("h_s_e",";MC shower energy [GeV];Reco. shower energy [GeV]",20,0,2,20,0,2)
-h_length = TH2F("h_length",";# Reco. showers; MC shower length [cm]",10,0,10,10,0,200)
-h_zero_showers_length = TH1F("h_zero_showers_length",";MC shower length [cm];N. Entries / 10 cm",20,0,200)
-h_zero_showers_energy = TH1F("h_zero_showers_energy",";MC shower energy [GeV];N. Entries / 0.1 GeV",20,0,2)
-
-h_showers_length = TH1F("h_showers_length",";MC shower length [cm];N. Entries / 10 cm",20,0,200)
-h_mc_shower_energy = TH1F("h_mc_shower_energy",";MC shower energy [GeV];N. Entries / 0.05 GeV",20,0,2)
-
+h_n_showers_e = TH2F("h_n_showers_e",";# Reco. showers;E_{MC} [GeV]",10,0,10,20,0,2)
+h_mc_reco_n = TH2F("h_mc_reco",";# Reco. showers;# MC showers",10,0,10,10,0,10)
+h_mc_reco_e = TH2F("h_mc_reco_e",";E_{MC} [GeV];#Sigma E_{reco} [GeV]",20,0,2,20,0,2)
+h_length = TH2F("h_length",";# Reco. showers; L_{MC} [cm]",10,0,10,10,0,200)
 h_res_length = TH1F("h_res_length",";L_{reco}-L_{MC};N. Entries / 10 cm",40,-200,200)
+
+# Non-reconstructed showers histograms
+h_zero_showers_length = TH1F("h_zero_showers_length",";L_{MC} [cm];N. Entries / 10 cm",20,0,200)
+h_zero_showers_energy = TH1F("h_zero_showers_energy",";E_{MC} [GeV];N. Entries / 0.1 GeV",20,0,2)
+h_mc_showers_energy_length = TH2F("h_mc_showers_energy_length",";E_{MC} [GeV];L_{MC} [cm]",20,0,2,20,0,200)
+
+# Reconstructed showers histograms
+h_mc_showers_length = TH1F("h_mc_showers_length",";L_{MC} [cm];N. Entries / 10 cm",20,0,200)
+h_mc_shower_energy = TH1F("h_mc_shower_energy",";E_{MC} [GeV];N. Entries / 0.05 GeV",20,0,2)
+
+# Efficiency histograms
 h_correct = TH1F("h_correct",";#nu_{e} energy [GeV];Efficiency",15,0,3)
 h_total = TH1F("h_total",";#nu_{e} energy [GeV];Efficiency",15,0,3)
-
 h_correct_more_showers = TH1F("h_correct_more_showers",";#nu_{e} energy [GeV];Efficiency",15,0,3)
-
-h_correct_shower_only = TH1F("h_correct_shower",";MC shower energy [GeV];Efficiency",15,0,3)
-h_correct_more_showers_only = TH1F("h_correct_more_showers_only",";MC shower energy [GeV];Efficiency",15,0,3)
-
-h_e_energy_mc_showers_length = TH2F("h_e_energy_mc_showers_length",";MC shower energy [GeV];MC shower length [cm]",20,0,2,20,0,200)
+h_correct_shower_only = TH1F("h_correct_shower",";#nu_{e} [GeV];Efficiency",15,0,3)
+h_correct_more_showers_only = TH1F("h_correct_more_showers_only",";#nu_{e} [GeV];Efficiency",15,0,3)
 
 print "Creating event object ..."
 ev = gallery.Event(filenames)
@@ -153,13 +152,11 @@ while (not ev.atEnd()):
 
         tracks = get_tracks(pandoraNu_tag).product()
         showers = get_showers(pandoraNu_tag).product()
-        showers_old = get_showers(showerrecopandora_tag).product()
         mcshowers = get_mcshowers(mcreco_tag).product()
         tracks = get_tracks(pandoraNu_tag).product()
 
 
-
-        for s in showers_old:
+        for s in showers:
             tot_s_energy += s.Energy()[s.best_plane()]/1000
 
 
@@ -175,7 +172,6 @@ while (not ev.atEnd()):
                 h_total.Fill(nu_energy)
 
                 if len(showers):
-
                     h_correct_more_showers_only.Fill(nu_energy)
 
                     if len(tracks) == 1:
@@ -188,11 +184,11 @@ while (not ev.atEnd()):
                         h_res_length.Fill(shower_length(mcshowers[0])-showers[0].Length())
 
                     h_e_diff.Fill(mc_shower_energy-tot_s_energy)
-                    h_s_e.Fill(mc_shower_energy,tot_s_energy)
+                    h_mc_reco_e.Fill(mc_shower_energy,tot_s_energy)
                     h_mc_shower_energy.Fill(mc_shower_energy)
-                    h_showers_length.Fill(shower_length(mcshowers[0]))
+                    h_mc_showers_length.Fill(shower_length(mcshowers[0]))
                 else:
-                    h_e_energy_mc_showers_length.Fill(mc_shower_energy,shower_length(mcshowers[0]))
+                    h_mc_showers_energy_length.Fill(mc_shower_energy,shower_length(mcshowers[0]))
 
                     h_zero_showers_length.Fill(shower_length(mcshowers[0]))
                     h_zero_showers_energy.Fill(mc_shower_energy)
@@ -250,7 +246,7 @@ c_e_diff.Draw()
 c_e_diff.SaveAs("plots/e_diff.pdf")
 
 c_e_s = TCanvas("c_e_s")
-h_s_e.Draw("colz")
+h_mc_reco_e.Draw("colz")
 line = TLine(0,0,2,2)
 line.SetLineStyle(2)
 line.SetLineWidth(2)
@@ -339,16 +335,21 @@ c_res_length.SaveAs("plots/res_length.pdf")
 
 c_zero_length = TCanvas("c_zero_length")
 show_overflow(h_zero_showers_length)
-show_overflow(h_showers_length)
+show_overflow(h_mc_showers_length)
 
 h_zero_showers_length.SetLineColor(1)
-h_showers_length.SetLineColor(1)
-h_showers_length.SetFillColor(kGreen+1)
+h_mc_showers_length.SetLineColor(1)
+h_mc_showers_length.SetFillColor(kGreen+1)
 h_stack_length = THStack("h_stack_length",";MC shower length [cm];N. Entries / 10 cm")
 h_stack_length.Add(h_zero_showers_length)
-h_stack_length.Add(h_showers_length)
+h_stack_length.Add(h_mc_showers_length)
 h_stack_length.Draw()
-
+leg_reco = TLegend(0.67,0.66,0.8,0.85)
+leg_reco.SetBorderSize(0)
+leg_reco.SetShadowColor(0)
+leg_reco.AddEntry(h_mc_showers_length,"Reconstructed showers","f")
+leg_reco.AddEntry(h_zero_showers_length,"Non-reconstructed showers","f")
+leg_reco.Draw()
 c_zero_length.Draw()
 c_zero_length.SaveAs("plots/zero_length.pdf")
 
@@ -370,7 +371,7 @@ c_zero_energy.Draw()
 c_zero_energy.SaveAs("plots/zero_energy.pdf")
 
 c_e_energy = TCanvas("c_e_energy")
-h_e_energy_mc_showers_length.Draw("colz")
+h_mc_showers_energy_length.Draw("colz")
 
 c_e_energy.Draw()
 c_e_energy.SaveAs("plots/e_energy.pdf")
