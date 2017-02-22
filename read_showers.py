@@ -14,20 +14,24 @@ gStyle.SetPalette(87)
 gStyle.SetNumberContours(99)
 
 def show_overflow(hist):
+    """Show the overflow entry in the last bin of the histogram"""
     nbins = hist.GetNbinsX()
     hist.SetBinContent(nbins, hist.GetBinContent(nbins)+hist.GetBinContent(nbins+1))
     hist.SetBinContent(nbins+1,0);
 
 def show_underflow(hist):
+    """Show the underflow entry in the first bin of the histogram"""
     hist.SetBinContent(1, hist.GetBinContent(0)+hist.GetBinContent(1));
     hist.SetBinContent(0,0);
 
 def style_hist(hist,color=kRed):
+    """Set histogram black border and filling color"""
     hist.SetLineColor(1)
     hist.SetFillColor(color)
     return hist
 
 def shower_length(shower):
+    """Measure MCShower length"""
     start = [shower.Start().X(),shower.Start().Y(),shower.Start().Z()]
     end = [shower.End().X(),shower.End().Y(),shower.End().Z()]
     l = math.sqrt(sum([(s-e)**2 for s,e in zip(start,end)]))
