@@ -158,10 +158,11 @@ while (not ev.atEnd()):
         tracks = get_tracks(pandoraNu_tag).product()
 
         tot_s_energy = 0
-        
+
         for s in showers:
             if len(s.Energy()):
                 if max(s.Energy()) > 0: tot_s_energy += max(s.Energy())
+
 
         if len(mcshowers) == 1:
             mc_shower_energy = mcshowers[0].DetProfile().E()/1000
